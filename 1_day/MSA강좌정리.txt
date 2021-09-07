@@ -1,0 +1,138 @@
+강사명: 인경열
+공유:  https://github.com/inky4832/msa_ssg
+
+1일차
+가. 환경설정
+
+  JDK ( 1.8 )
+  https://www.oracle.com/kr/java/technologies/javase/javase-jdk8-downloads.html 
+  기본 설치 방법으로 설치함
+  환경설정
+  JAVA_HOME=C:\Program Files\Java\jdk1.8.0_301
+  PATH=%JAVA_HOME%\bin;%PATH%
+
+
+  STS ( sts 3.9.14 , eclipse 4.15)
+  https://spring.io/tools
+  -한글인코딩처리
+  preferences > general > workspace 에서 UTF-8로 변경
+  Content Types > Text > Java Properties 에서 UTF-8로 변경하고 update버튼 클릭
+ 
+  -스프링부트 환경설정파일
+  application.properties (기본)
+   ==> key=value
+  또는
+  application.yml
+   ==> 들여쓰기 
+
+  
+
+  PostgreSQL
+  https://www.postgresql.org/download/windows/
+  기본설치
+  port:5432
+  DB생성: customer
+         order
+	 catalogs
+	 cqrs
+
+  스프링부트 프로젝트 생성
+  https://start.spring.io/
+
+  Mybatis + JPA 병행
+
+#####################################
+리뷰
+1. 빌드 툴 (maven)
+   pom.xml 파일에 의존성 설정.
+   
+   http://mvnrepository.com
+
+2.  스프링 부트 환경 설정
+
+  application.properties (기본)
+   ==> key=value
+   예> server.port=8081
+  또는
+  application.yml
+   ==> 들여쓰기 
+   예>
+       server:
+          port: 8081
+  
+  3. 스프링 부트 내장 톰캣 사용 가능
+    spring-boot-starter-web
+
+  4. 스프링 부트 실행은 반드시 
+  @SpringBootApplication 가진 클래스를 실행한다.
+     
+
+  5. Application 클래스 이외의 클래스 작성시 권장사항
+    ==>반드시 Application의 패키지의 서브패키지로 작성한다.
+    ==>추가로 어노테이션을 지정해야 된다.
+    -Controller ( @RestController, @Controller)
+	가.@Controller
+	  ==> 응답결과를 화면으로 처리(html,jsp)
+          ==> 응답결과를 JSON객체로 반환하고자 한다면, @ResponseBody 추가해야 된다.
+
+	나. @RestController ( @Controller + @ResponseBody )
+          ==> 응답결과를 JSON객체로 반환
+          ==>
+	   예> public User method()
+              {
+	        "username":"홍길동",
+		"age":20
+              }
+	      
+            예> public List<User> method()
+              [
+	      {
+	        "username":"홍길동1",
+		"age":20
+              },
+	      {
+	        "username":"홍길동2",
+		"age":30
+              }]
+
+
+    -Service ( @Service )
+
+    -Repository ( @Repository )
+
+    ==> 자동으로 객체생성이 된다.( new 불필요 )
+
+  6. 요청 URL 정보
+  
+  기본문법:(*****)
+   http://서버ip:포트번호/컨텍스트명/서블릿맵핑명/요청매핑값
+
+  예>  http://localhost:8081/hello
+
+  컨텍스트명: 생략됨, 용도는 MSA 서비스 구분용도
+   application.properties에서 설정 가능
+   ==> server.servlet.context-path=/msa
+      http://localhost:8081/msa/hello
+
+  서블릿맵핑명:  DispatcherServlet 자동생성.
+            / 로 자동으로 매핑됨(변경불가).
+
+
+ 7. Spring MVC 아키텍쳐
+	      @RestController
+       요청    @Controller    @Service    @Repository 대신에 @Mapper
+ 브라우저 --> Controller ---> Service --> Repository--> DB(PostgreSQL)
+       <--
+       응답 데이터 : 가. 화면 (HTML, JSP )
+                나. JSON 객체 ( {key:value, key:value} ) (*****)
+		  ==> RESTFul 서비스
+       
+       요청 데이터: JSON 객체
+
+  * JSON 요청하고 응답 처리 하는 도구
+   가. PostMan : 크롬에서 제공하는 플러그인 
+   나. Swagger API: MSA에서 요청 URL 관리 ( API 관리 )
+      ==> 의존성 추가 + Swagger 클래스 작성
+
+      http://localhost:8081/msa/swagger-ui.html
+
