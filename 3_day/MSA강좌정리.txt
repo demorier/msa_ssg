@@ -1,0 +1,323 @@
+강사명: 인경열
+공유:  https://github.com/inky4832/msa_ssg
+
+1일차
+가. 환경설정
+
+  JDK ( 1.8 )
+  https://www.oracle.com/kr/java/technologies/javase/javase-jdk8-downloads.html 
+  기본 설치 방법으로 설치함
+  환경설정
+  JAVA_HOME=C:\Program Files\Java\jdk1.8.0_301
+  PATH=%JAVA_HOME%\bin;%PATH%
+
+
+  STS ( sts 3.9.14 , eclipse 4.15)
+  https://spring.io/tools
+  -한글인코딩처리
+  preferences > general > workspace 에서 UTF-8로 변경
+  Content Types > Text > Java Properties 에서 UTF-8로 변경하고 update버튼 클릭
+ 
+  -스프링부트 환경설정파일
+  application.properties (기본)
+   ==> key=value
+  또는
+  application.yml
+   ==> 들여쓰기 
+
+  
+
+  PostgreSQL
+  https://www.postgresql.org/download/windows/
+  기본설치
+  port:5432
+  DB생성: customer
+         order
+	 catalogs
+	 cqrs
+
+  스프링부트 프로젝트 생성
+  https://start.spring.io/
+
+  Mybatis + JPA 병행
+
+#####################################
+리뷰
+1. 빌드 툴 (maven)
+   pom.xml 파일에 의존성 설정.
+   
+   http://mvnrepository.com
+
+2.  스프링 부트 환경 설정
+
+  application.properties (기본)
+   ==> key=value
+   예> server.port=8081
+  또는
+  application.yml
+   ==> 들여쓰기 
+   예>
+       server:
+          port: 8081
+  
+  3. 스프링 부트 내장 톰캣 사용 가능
+    spring-boot-starter-web
+
+  4. 스프링 부트 실행은 반드시 
+  @SpringBootApplication 가진 클래스를 실행한다.
+     
+
+  5. Application 클래스 이외의 클래스 작성시 권장사항
+    ==>반드시 Application의 패키지의 서브패키지로 작성한다.
+    ==>추가로 어노테이션을 지정해야 된다.
+    -Controller ( @RestController, @Controller)
+	가.@Controller
+	  ==> 응답결과를 화면으로 처리(html,jsp)
+          ==> 응답결과를 JSON객체로 반환하고자 한다면, @ResponseBody 추가해야 된다.
+
+	나. @RestController ( @Controller + @ResponseBody )
+          ==> 응답결과를 JSON객체로 반환
+          ==>
+	   예> public User method()
+              {
+	        "username":"홍길동",
+		"age":20
+              }
+	      
+            예> public List<User> method()
+              [
+	      {
+	        "username":"홍길동1",
+		"age":20
+              },
+	      {
+	        "username":"홍길동2",
+		"age":30
+              }]
+
+
+    -Service ( @Service )
+
+    -Repository ( @Repository )
+
+    ==> 자동으로 객체생성이 된다.( new 불필요 )
+
+  6. 요청 URL 정보
+  
+  기본문법:(*****)
+   http://서버ip:포트번호/컨텍스트명/서블릿맵핑명/요청매핑값
+
+  예>  http://localhost:8081/hello
+
+  컨텍스트명: 생략됨, 용도는 MSA 서비스 구분용도
+   application.properties에서 설정 가능
+   ==> server.servlet.context-path=/msa
+      http://localhost:8081/msa/hello
+
+  서블릿맵핑명:  DispatcherServlet 자동생성.
+            / 로 자동으로 매핑됨(변경불가).
+
+
+ 7. Spring MVC 아키텍쳐
+	      @RestController
+       요청    @Controller    @Service    @Repository 대신에 @Mapper
+ 브라우저 --> Controller ---> Service --> Repository--> DB(PostgreSQL)
+       <--
+       응답 데이터 : 가. 화면 (HTML, JSP )
+                나. JSON 객체 ( {key:value, key:value} ) (*****)
+		  ==> RESTFul 서비스
+       
+       요청 데이터: JSON 객체
+
+  * JSON 요청하고 응답 처리 하는 도구
+   가. PostMan : 크롬에서 제공하는 플러그인 
+   나. Swagger API: MSA에서 요청 URL 관리 ( API 관리 )
+      ==> 의존성 추가 + Swagger 클래스 작성
+
+      http://localhost:8081/msa/swagger-ui.html
+//////////////////////////////////////////////////////
+* 웹 어플리케이션 개발 방식
+
+1. SOA 방식
+  
+
+2. RESTFul 방식
+ 
+  가. 메서드 이용
+     get ---> select 용 , @GetMapping, @RequestMapping("/aa" , method=RequestMethod.GET)
+     post --> insert 용   @PostMapping, @RequestMapping("/aa" , method=RequestMethod.POST)
+     put  --> update 용   @PutMapping, @RequestMapping("/aa" , method=RequestMethod.PUT)
+     delete --> delete 용 @DeleteMapping, @RequestMapping("/aa" , method=RequestMethod.DELETE)
+
+  나. 클라이언트와 서버 사이의 데이터 포맷: JSON
+  {key:value}
+                   JSON             @RestController + @RequestBody
+    클라이언트 -----------------> 서버 : 
+           <-----------------
+	        JSON                @RestController
+
+  다. URL에 포함해서 데이터  전달
+    
+      // http://localhost:8090/rest/customer/abc
+      @GetMapping("/rest/customer/{userid}")
+      public String method(@PathVariable String useri){}
+
+//////////////////////////////////////////////////////////////////
+2일차
+
+1. Customer 서비스 ( 고객관리 )
+								 @Repository
+        JSON 요청    @RestController       CustomerService         @Mapper
+	                                  인터페이스
+					   @Service
+					   @Transactional
+브라우저  -----------> CustomerController ---> CustomerServiceImpl ---> CustomerRepository --> DB
+ 도구     <----------
+(Postman)        JSON 응답
+ Swagger API
+
+   http://localhost:8076/ecommerce/customer/swagger-ui.html
+
+
+2. 서비스간의 통신
+
+  가. 동기 통신
+    : 요청~응답
+    : RestTemplate방법, Feign Client 방법
+    : 성능 낮고 데이터 무결성 보장 확실하다.
+
+  나. 비동기 통신
+    : 성능 좋지만 데이터 무결성 보장 안됨.
+    : 메시지 브로커(버퍼) 이용
+    : Kafka 사용
+    : CQRS 패턴
+
+3. 장애전파 Circuit breaker
+   ==> hystrix 라이브러리 
+   ==> 스프링부트 2.3.X 사용 권장
+       스프링부트 2.4.X Resilence4j
+
+   가. RestTemplate
+
+
+   나. Feign Cient
+
+   #feign 와 hystrix 활성화 ==> false이면 hystrix 작동안함.
+   feign.hystrix.enabled=true
+
+   @FeignClient(name="ecommerce-customer",
+            url="http://localhost:8076/ecommerce/customer",
+            fallbackFactory = CustomerFeignClientFallbackFactory.class)
+public interface CustomerFeignClient {
+	 @RequestMapping("/rest/customers/{userid}")
+	 public Customer retrieveCustomer(@PathVariable String userid) throws Exception;
+}
+
+@Component
+class CustomerFeignClientFallbackFactory implements FallbackFactory<CustomerFeignClient>{
+	@Override
+	public CustomerFeignClient create(Throwable cause) {
+		return new CustomerFeignClient() {
+		@Override
+			public Customer retrieveCustomer(String userid) throws Exception {
+			String mesg = "Error: " + userid + "에 해당하는 고객 정보 조회가 지연되고 있습니다.";
+				System.out.println(mesg);
+				//return new Customer();  // 
+				throw new Exception(mesg);
+			}
+		};
+	}
+}
+
+////////////////////////////////////////
+3일차
+
+1. load balancer: Ribbon
+
+   Order ---------> Customer(8076)
+                    Customer(9076) 
+   
+   가. Order의 pom.xml
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-ribbon</artifactId>
+			<version>2.2.8.RELEASE</version>
+		</dependency>
+
+   나. Order의 RestTemplate에서
+
+     @LoadBalanced
+     @Bean
+     public RestTemplate getRestTemplate() {
+		return new RestTemplate();
+	}
+
+   다. application.properties에서 lb 설정 (static 방법)
+
+    #ribbon설정
+ecommerce-customer.ribbon.eureka.enabled=false
+ecommerce-customer.ribbon.listOfServers=localhost:8076,localhost:9076
+ecommerce-customer.ribbon.ServerListRefreshInterval=15000
+ecommerce-customer.ribbon.MaxAutoRetries=0
+
+#RestTemplate
+#customer.api.url=http://${CUSTOMER}:8076/ecommerce/customer
+customer.api.url=http://ecommerce-customer/ecommerce/customer
+
+
+2. Service Registry : Eureka
+
+  가. Eureka 서버 설정
+  	<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+			<version>2.2.8.RELEASE</version>
+		</dependency>
+
+       @SpringBootApplication
+@EnableEurekaServer
+public class EcommerceEurekaApplication {
+
+server.port=8761
+spring.application.name=ecommerce-eureka
+
+# eureka
+#기본값은 30초이나 개발 편의를 위해 1초로 설정
+eureka.server.response-cache-update-interval-ms=1000
+# 개발모드 
+eureka.server.enableSelfPreservation=false 
+# 개발모드
+eureka.client.register-with-eureka=false
+# 개발모드 
+eureka.client.fetch-registry=false 
+#기본값 설정
+eureka.client.service-url.defaultZone=http://${EUREKA}:8761/eureka
+# 각 서버별 접근을 IP로 하겠다는 의미  
+eureka.instance.prefer-ip-address=true 
+
+
+# env
+# localhost 실행안되면  cmd에서 ipconfig해서 실제 ip값 지정해야 된다.
+EUREKA=localhost  
+
+  나.  Eureka 클라이언트 설정
+
+    <dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+			<version>2.2.8.RELEASE</version>
+		</dependency>
+
+   @SpringBootApplication
+@EnableEurekaClient
+public class EcommerceCustomerApplication {
+
+# eureka
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+eureka.client.service-url.defaultZone=http://${EUREKA}:8761/eureka
+eureka.instance.prefer-ip-address=true
+
+# Env
+POSTGRES=localhost
+EUREKA=localhost
