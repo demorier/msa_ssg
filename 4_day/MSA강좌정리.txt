@@ -372,3 +372,129 @@ EUREKA=localhost
 
  6) consumer
 bin\windows\kafka-console-consumer.bat  --bootstrap-server localhost:9092  --topic  msa  --from-beginning
+
+
+
+3. Kafka와 Spring Boot 연동
+
+ 가. producer(publisher)
+   
+    1) 의존성 설정
+
+     		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+
+    2) application.properties
+      server.port=8001
+      kafka.bootstrap=localhost:9092
+      ping.topic.name=msa
+
+    3) Ping.java ( 요청 메시지 )
+       Pong.java  (응답 메시지 )
+
+                  Ping 객체 (객체 직렬화)                  Ping 객체(객체 역직렬화)
+       producer ----------------> kafka 서버(9092)  -----------------> Consumer
+      (publisher)                                                     (subscriber)
+
+
+    4) 객체 직렬화 방법 설정 (KafkaPublisherConfig.java)
+      @Configuration
+public class KafkaPublisherConfig {
+
+	@Value(value = "${kafka.bootstrap}")
+	private String bootstrap;
+
+	@Bean
+	public ProducerFactory<String, Ping> pingProducerFactory() {
+		Map<String, Object> configProps = new HashMap<>();
+		configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
+		configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+		configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+		return new DefaultKafkaProducerFactory<>(configProps);
+	}
+
+	@Bean
+	public KafkaTemplate<String, Ping> pingKafkaTemplate() {
+		return new KafkaTemplate<>(pingProducerFactory());
+	}
+}
+
+   5) publiser 역할:
+
+    @Component
+public class PingPublisher {
+
+	@Autowired
+    private KafkaTemplate<String, Ping> pingKafkaTemplate;
+
+     public Pong pingAndPong(Ping ping) throws Exception {
+    	//pingKafkaTemplate.send(pingTopicName, ping);  만 있어도 가능
+    	ListenableFuture<SendResult<String, Ping>> future = pingKafkaTemplate.send(pingTopicName, ping);
+
+    6) 서비스에서 PingPublisher 사용
+  //////////////////////////////////////
+
+ 나. consumer(subscriber)
+
+  1)  의존성 
+  <dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+
+ 2) application.properties
+      server.port=8001
+      kafka.bootstrap=localhost:9092
+      ping.topic.name=msa
+
+ 3) Ping.java ( 요청 메시지 )
+       Pong.java  (응답 메시지 )
+
+                  Ping 객체 (객체 직렬화)                  Ping 객체(객체 역직렬화)
+       producer ----------------> kafka 서버(9092)  -----------------> Consumer
+      (publisher)                                                     (subscriber)
+
+  4) 객체 역직렬화 방법 설정
+  @Configuration
+public class KafkaSubscriberConfig {
+
+	@Value(value = "${kafka.bootstrap}")
+	private String bootstrap;
+
+	public ConsumerFactory<String, Ping> pingConsumerFactory() {
+		Map<String, Object> props = new HashMap<>();
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
+		props.put(ConsumerConfig.GROUP_ID_CONFIG, "pong");  // Consumer를 식별하는 고유 아이디.
+		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class); 
+		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");  // offset을 주기적으로 commit 할지 여부
+		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); // earliest: 맨 처음부터 다시 , latest: 이전꺼 무시 새로입력 데이터부터 읽기 시작 
+		return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(),
+				new JsonDeserializer<>(Ping.class, false));
+	}
+
+	@Bean
+	public ConcurrentKafkaListenerContainerFactory<String, Ping> pingKafkaListenerContainerFactory() {
+		ConcurrentKafkaListenerContainerFactory<String, Ping> factory = new ConcurrentKafkaListenerContainerFactory<>();
+		//ENABLE_AUTO_COMMIT_CONFIG= false로 지정했을때, 어떻게 commit할지를 지정한다.
+		factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE); // 즉각적으로 ack 요청한다.
+		factory.setConsumerFactory(pingConsumerFactory());
+		return factory;
+	}
+}
+
+
+ 5) subscriber 역할:
+
+  @Component
+public class PingSubscriber {
+
+	@Autowired
+	KafkaSubscriberService  service;
+	
+	 @KafkaListener(topics = "${ping.topic.name}", containerFactory = "pingKafkaListenerContainerFactory")
+	    public void pingListener(Ping ping, Acknowledgment ack) {
+
+   6) 서비스에서 PingSubscriber 사용
